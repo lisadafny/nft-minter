@@ -6,13 +6,23 @@ async function init() {
         // only have read-only access
         console.log("MetaMask not installed; using read-only defaults");
         //provider = ethers.getDefaultProvider();
-        provider = new ethers.InfuraProvider("maticmum");
+        provider = new ethers.InfuraProvider("sepolia");
         network = await provider.getNetwork();
-        contract = new ethers.Contract("0xBca236FD0aB582a5FF232c533D8ab04dD580511c", abi, provider);
+        contract = new ethers.Contract("0xAF47Ae347A2521B430eaeaabf2Ef95d9Dfe7F781", abi, provider);
         console.log("selected provider: ", provider);
         console.log("network:", network);
         const divImg = document.getElementById("mainDiv");
         divImg.style.display = "none";
+
+        const inputMetadados = document.getElementById("inputMetadados");
+        const inputAddress = document.getElementById("inputAddress");
+        const btnSubmit = document.getElementById("btnSubmit");
+        const txtWarning = document.getElementById("txtWarning");
+
+        inputMetadados.disabled = true;
+        inputAddress.disabled = true;
+        btnSubmit.disabled = true;
+        txtWarning.innerHTML = "Conecte com o Metamask para interagir";
     } else {
         // Connect to the MetaMask EIP-1193 object. This is a standard
         // protocol that allows Ethers access to make all read-only
@@ -24,7 +34,7 @@ async function init() {
         alert("O Metamask irá pedir aprovação para acessar essa página.\nPor favor, aceite.");
         signer = await provider.getSigner();
         network = await provider.getNetwork();
-        contract = new ethers.Contract("0xBca236FD0aB582a5FF232c533D8ab04dD580511c", abi, signer);
+        contract = new ethers.Contract("0xAF47Ae347A2521B430eaeaabf2Ef95d9Dfe7F781", abi, signer);
         console.log("selected provider: ", provider);
         console.log("network:", network);
         console.log("signer: ", signer);
@@ -34,23 +44,39 @@ async function init() {
         networkAccount.innerHTML = "Bem-vindo(a) " + signer.address + "! ";
 
         // Create a contract
-        const nftNomeObj = await contract.name();
-        const nftNome = document.getElementById("nftNome");
-        nftNome.innerHTML = nftNomeObj;
-        const metadadosURL = await contract.tokenURI(2);
-        
-        console.log("metadadosURL: ", metadadosURL);
-        const metadadadosResp = await fetch(metadadosURL);
-        console.log("metadadadosResp: ", metadadadosResp);
-        const metadados = await metadadadosResp.json();
-        console.log("metadadadosResp Body: ", metadados);
-        const nftDesc = document.getElementById("nftDesc");
-        nftDesc.innerHTML = metadados.description;
-        const imgNFT = document.getElementById("imgNFT");
-        imgNFT.src = metadados.image;
-        const divImg = document.getElementById("divImg");
-        divImg.style.display = "grid";
-        
+        try {
+            const nftNomeObj = await contract.name();
+            const nftNome = document.getElementById("nftNome");
+            nftNome.innerHTML = nftNomeObj;
+            const metadadosURL = await contract.tokenURI(0);
+
+            console.log("metadadosURL: ", metadadosURL);
+            const metadadadosResp = await fetch(metadadosURL);
+            console.log("metadadadosResp: ", metadadadosResp);
+            const metadados = await metadadadosResp.json();
+            console.log("metadadadosResp Body: ", metadados);
+            const nftDesc = document.getElementById("nftDesc");
+            nftDesc.innerHTML = metadados.description;
+            const imgNFT = document.getElementById("imgNFT");
+            imgNFT.src = metadados.image;
+            const divImg = document.getElementById("divImg");
+            divImg.style.display = "grid";
+
+            const autorizado = await contract.hasRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", signer.address);
+            if (!autorizado) {
+                const inputMetadados = document.getElementById("inputMetadados");
+                const inputAddress = document.getElementById("inputAddress");
+                const btnSubmit = document.getElementById("btnSubmit");
+                const txtWarning = document.getElementById("txtWarning");
+
+                inputMetadados.disabled = true;
+                inputAddress.disabled = true;
+                btnSubmit.disabled = true;
+                txtWarning.innerHTML = "Usuário conectado não tem autorização para mintar.";
+            }
+        } catch (error) {
+            console.error(error);
+        }
     }
 }
 document.getElementById('formMint').addEventListener('submit', async () => {
