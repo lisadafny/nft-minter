@@ -1,11 +1,7 @@
 async function init() {
     if (window.ethereum == null) {
-        // If MetaMask is not installed, we use the default provider,
-        // which is backed by a variety of third-party services (such
-        // as INFURA). They do not have private keys installed so are
-        // only have read-only access
+
         console.log("MetaMask not installed; using read-only defaults");
-        //provider = ethers.getDefaultProvider();
         provider = new ethers.InfuraProvider("sepolia");
         network = await provider.getNetwork();
         contract = new ethers.Contract("0xAF47Ae347A2521B430eaeaabf2Ef95d9Dfe7F781", abi, provider);
@@ -42,7 +38,23 @@ async function init() {
 
         const networkAccount = document.getElementById("navAddress");
         networkAccount.innerHTML = "Bem-vindo(a) " + signer.address + "! ";
+        
+        try {
+            const autorizado = await contract.hasRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", signer.address);
+            if (autorizado) {
+                const inputMetadados = document.getElementById("inputMetadados");
+                const inputAddress = document.getElementById("inputAddress");
+                const btnSubmit = document.getElementById("btnSubmit");
+                const txtWarning = document.getElementById("txtWarning");
 
+                inputMetadados.disabled = false;
+                inputAddress.disabled = false;
+                btnSubmit.disabled = false;
+                txtWarning.innerHTML = "";
+            }
+        } catch (error) {
+            console.error(error);
+        }
         // Create a contract
         try {
             const nftNomeObj = await contract.name();
@@ -61,19 +73,6 @@ async function init() {
             imgNFT.src = metadados.image;
             const divImg = document.getElementById("divImg");
             divImg.style.display = "grid";
-
-            const autorizado = await contract.hasRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", signer.address);
-            if (!autorizado) {
-                const inputMetadados = document.getElementById("inputMetadados");
-                const inputAddress = document.getElementById("inputAddress");
-                const btnSubmit = document.getElementById("btnSubmit");
-                const txtWarning = document.getElementById("txtWarning");
-
-                inputMetadados.disabled = true;
-                inputAddress.disabled = true;
-                btnSubmit.disabled = true;
-                txtWarning.innerHTML = "Usuário conectado não tem autorização para mintar.";
-            }
         } catch (error) {
             console.error(error);
         }
